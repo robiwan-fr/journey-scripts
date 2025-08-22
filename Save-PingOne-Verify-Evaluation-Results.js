@@ -16,7 +16,7 @@ COMMERCIAL DEPLOYMENT(S).
  * Author: Steve Robrahn steve.robrahn@pingidentity.com
  * This script writes PingOne Verify metadata and verified data to multi-valued attributes 
  * of the user profile to enable access within AIC.
- * Attribute references use the PingAM attribute names.
+ * Attribute references use the PingAM attribute names for retrieval and PingIDM attribute names for storage via the Patch Object node.
  * See https://docs.pingidentity.com/pingoneaic/latest/identities/user-identity-properties-attributes-reference.html
  * for more details about Attribute References.
  *
@@ -30,9 +30,12 @@ COMMERCIAL DEPLOYMENT(S).
  */
 
 var nodeConfig = {
-    metadataAttribute: "fr-attr-multi3",
-    verifiedDataAttribute: "fr-attr-multi4",
-    entryLimit: 10
+    metadataAmAttribute: "fr-attr-multi3",
+    verifiedDataAmAttribute: "fr-attr-multi4",
+    pingOneUserIdAmAttribute: "fr-attr-str1",
+    metadataIdmAttribute: "frUnindexedMultivalued3",
+    verifiedDataIdmAttribute: "frUnindexedMultivalued4",
+    pingOneUserIdIdmAttribute: "frUnindexedString1"
     };
 
 var nodeOutcomes = {
@@ -41,6 +44,7 @@ var nodeOutcomes = {
 };
 
 (function () {
+    var pingOneUserId = nodeState.get("pingOneUserId")
     var metadata = nodeState.get("pingOneVerifyMetadata")
     var verifiedData = nodeState.get("pingOneVerifyVerifiedData")
     var failureReason = nodeState.get("pingOneVerifyEvaluationFailureReason")
@@ -49,17 +53,20 @@ var nodeOutcomes = {
         action.goto(nodeOutcomes.ERROR);
     }
     // _id in nodeState depends on Identify Existing User node with identity attribute: userName ahead of this script
-    var uuid = nodeState.get("_id"); 
-    var identity = idRepository.getIdentity(uuid);
-    var metadataTemp = identity.getAttributeValues(nodeConfig.metadataAttribute);
-    var verifiedDataTemp = identity.getAttributeValues(nodeConfig.verifiedDataAttribute);
+    var uuid = nodeState.get("_id")
+    var identity = idRepository.getIdentity(uuid)
+    var pingOneUserIDTemp = identity.getAttributeValues(nodeConfig.pingOneUserIdAmAttribute)
+    var metadataTemp = identity.getAttributeValues(nodeConfig.metadataAttribute)
+    var verifiedDataTemp = identity.getAttributeValues(nodeConfig.verifiedDataAttribute)
     
     
     var attributes = nodeState.get("objectAttributes")
-    logger.error("objectAttributes {}",JSON.stringify(attributes))
-    
     var metadataValues = []
     var verifiedDataValues = []
+
+    // if (typeof pingOneUserIDTemp == 'undefined') {
+        attributes.put(nodeConfig.pingOneUserIdIdmAttribute,pingOneUserId)
+    // }
     
     if (metadataTemp) {
         metadataValues = metadataTemp.toArray().map(function (item) {
@@ -67,7 +74,6 @@ var nodeOutcomes = {
         })
     }
     metadataValues.push(metadata)
-    logger.error("metadataValues {}",JSON.stringify(metadataValues))
     
     if (verifiedDataTemp) {
         verifiedDataValues = verifiedDataTemp.toArray().map(function (item) {
@@ -75,11 +81,10 @@ var nodeOutcomes = {
         })
     }
     verifiedDataValues.push(verifiedData)
-    logger.error("verifiedDataValues {}",JSON.stringify(verifiedDataValues))
-
+    
     if (attributes) {
-        attributes.frUnindexedMultivalued3 = metadataValues,
-        attributes.frUnindexedMultivalued4 = verifiedDataValues
+        attributes[nodeConfig.metadataIdmAttribute] = metadataValues,
+        attributes[nodeConfig.verifiedDataIdmAttribute] = verifiedDataValues
     }
     nodeState.putShared("objectAttributes", attributes);
     
