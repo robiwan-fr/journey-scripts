@@ -15,7 +15,7 @@ COMMERCIAL DEPLOYMENT(S).
 /*
  * Author: Steve Robrahn steve.robrahn@pingidentity.com
  * This script writes PingOne Verify metadata and verified data to multi-valued attributes 
- * of the user profile to enable access within AIC.
+ * of the user profile to enable access within AIC. It also stores the pingOneUserId.
  * Attribute references use the PingAM attribute names for retrieval and PingIDM attribute names for storage via the Patch Object node.
  * See https://docs.pingidentity.com/pingoneaic/latest/identities/user-identity-properties-attributes-reference.html
  * for more details about Attribute References.
