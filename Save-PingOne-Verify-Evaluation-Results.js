@@ -15,8 +15,8 @@ COMMERCIAL DEPLOYMENT(S).
 /*
  * Author: Steve Robrahn steve.robrahn@pingidentity.com
  * This script writes PingOne Verify metadata and verified data to multi-valued attributes 
- * of the user profile to enable access within AIC. It also stores the pingOneUserId.
- * Attribute references use the PingAM attribute names for retrieval and PingIDM attribute names for storage via the Patch Object node.
+ * of the user profile to enable access within AIC.
+ * Attribute references use the PingAM attribute names for retrieval and PingIDM attribute names for storage.
  * See https://docs.pingidentity.com/pingoneaic/latest/identities/user-identity-properties-attributes-reference.html
  * for more details about Attribute References.
  *
@@ -24,6 +24,11 @@ COMMERCIAL DEPLOYMENT(S).
  * Before this node:
  * A Platform Username node 
  * An Identify Existing User node with identity attribute: userName
+ * A PingOne Verify Evaluation node with options set to true:
+ * Store verification metadata
+ * Store verified data
+ * Capture failure
+ * 
  * After this node:
  * A Patch Object node with ignored attributes: userName, identity resource: managed/<realm>_user, 
  * and identity attribute: userName
@@ -55,19 +60,19 @@ var nodeOutcomes = {
     // _id in nodeState depends on Identify Existing User node with identity attribute: userName ahead of this script
     var uuid = nodeState.get("_id")
     var identity = idRepository.getIdentity(uuid)
-    var pingOneUserIDTemp = identity.getAttributeValues(nodeConfig.pingOneUserIdAmAttribute)
-    var metadataTemp = identity.getAttributeValues(nodeConfig.metadataAttribute)
-    var verifiedDataTemp = identity.getAttributeValues(nodeConfig.verifiedDataAttribute)
+    var pingOneUserIDTemp = identity.getAttributeValues(nodeConfig.pingOneUserIdAmAttribute) //[0]
+    var metadataTemp = identity.getAttributeValues(nodeConfig.metadataAmAttribute)
+    var verifiedDataTemp = identity.getAttributeValues(nodeConfig.verifiedDataAmAttribute)
     
     
     var attributes = nodeState.get("objectAttributes")
     var metadataValues = []
     var verifiedDataValues = []
 
-    // if (typeof pingOneUserIDTemp == 'undefined') {
+    if (typeof pingOneUserIDTemp[0] == 'undefined') {
         attributes.put(nodeConfig.pingOneUserIdIdmAttribute,pingOneUserId)
-    // }
-    
+    }
+        
     if (metadataTemp) {
         metadataValues = metadataTemp.toArray().map(function (item) {
             return String(item);
